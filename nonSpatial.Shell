@@ -1,0 +1,30 @@
+/*
+ * Dane nieprzestrzenne 
+ */
+ 
+var stats = db.nonSpatialCollection.stats();
+
+// liczba i rozmiar dokumentow
+print("Liczba rekodow w kolekcji dokumentow nieprzestrzennych: " + stats.count);
+print("Rozmiar kolekcji danych nieprzestrzennych: " + stats.storageSize / 1024 / 1024 + "MB");
+
+db.nonSpatialCollection.dropIndex("age_1")
+
+function measureNonSpatialQueryDuration() {
+    var duration = 0;
+    for (var i = 0; i < 10; ++i) {
+        duration += db.nonSpatialCollection.find({}, {age: 1, "_id": 0}).sort({"age": 1}).allowDiskUse().explain("executionStats").executionStats.executionTimeMillis;
+    }
+    
+    return duration / 10 / 1000;
+}
+
+// średni czas trwania zapytania na danych nieprzestrzennych bez indeksu - wyłuskanie i posortowanie wszystkich dokumentow po atrybucie 'age'
+print("Średni czas trwania zapytania na danych nieprzestrzennych bez indeksu: " + measureNonSpatialQueryDuration() + "s");
+
+db.nonSpatialCollection.createIndex({ age: 1 })
+// rozmiar indeksu
+print("Rozmiar indeksu: " + db.nonSpatialCollection.stats().indexSizes.age_1 / 1024 / 1024 + " MB");
+
+// średni czas trwania zapytania na danych nieprzestrzennych z indeksem - wyłuskanie i posortowanie wszystkich dokumentow po atrybucie 'age'
+print("Średni czas trwania zapytania na danych nieprzestrzennych z indeksem: " + measureNonSpatialQueryDuration() + "s");

@@ -1,0 +1,34 @@
+/*
+ * Dane dla indeksu geoHaystack
+ */
+ 
+var stats = db.geoHaystack.stats();
+
+// liczba i rozmiar dokumentów
+print("Liczba rekodow w kolekcji dokumentow przestrzennych geoHaystack: " + stats.count);
+print("Rozmiar kolekcji danych przestrzennych geoHaystack: " + stats.storageSize / 1024 / 1024 + " MB");
+    
+db.geoHaystack.stats();
+db.geoHaystack.dropIndex("geometry_geoHaystack_type_1");
+db.geoHaystack.createIndex( { geometry : "geoHaystack" ,
+                       type : 1 } ,
+                       { bucketSize : 0.01 } );
+                       
+// rozmiar indeksu
+print("Rozmiar indeksu: " + db.geoHaystack.stats().indexSizes.geometry_geoHaystack_type_1 / 1024 / 1024 + " MB");                       
+           
+var gdanskCentralStationCoords = [18.6438,54.3555];
+var gdanskCentralStation       = {"type": "Point", coordinates: gdanskCentralStationCoords};
+     
+var duration = 0;
+for (var i = 0; i < 10; ++i) {
+    duration +=  db.runCommand( { geoSearch : "geoHaystack" ,
+             search : { type: "Feature" } ,
+             near : gdanskCentralStationCoords,
+             maxDistance : 1/111.12, //111.12km - 1 degree
+             limit: 10000000 }).stats.time;
+}   
+
+print("Średni czas wykonania zapytania o wszystkie obiekty w promieniu 10km od dworca centalnego w Gdansku (z indeksem przestrzennym geoHaystack): " +
+    duration / 10 /1000 + "s");
+    
